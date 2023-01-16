@@ -11,6 +11,10 @@ import java.io.IOException
 import kotlin.concurrent.timer
 
 
+//https://github.com/JetBrains/Exposed/wiki/Getting-Started
+//https://github.com/icerockdev/db-utils/blob/master/sample/src/main/kotlin/com/icerockdev/sample/Main.kt
+//https://github.com/hfhbd/postgres-native-sqldelight
+//https://github.com/pengrad/java-telegram-bot-api
 lateinit var bot: TelegramBot
 
 fun main(args: Array<String>) {
