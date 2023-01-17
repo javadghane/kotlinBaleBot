@@ -17,6 +17,18 @@ import kotlin.concurrent.timer
 //https://github.com/pengrad/java-telegram-bot-api
 lateinit var bot: TelegramBot
 
+var lastUserState = UserState.STATE_INIT
+
+enum class UserState {
+    STATE_NONE,
+    STATE_INIT,
+    STATE_GET_MOBILE,
+    STATE_GET_CODE,
+    STATE_ACTIVE_USER,
+}
+
+var userList: ArrayList<User> = arrayListOf()
+
 fun main(args: Array<String>) {
     val token = "2033023004:6ldnXC5ILP451w6fpDNqmoWFE9VvnO1fWHfpzLoT"
     val username = "meedc_bot"
@@ -35,8 +47,12 @@ fun main(args: Array<String>) {
         UpdatesListener.CONFIRMED_UPDATES_ALL
     }
 
+
 }
 
+fun saveMessageOnDb() {
+
+}
 
 fun handleMessage(msg: Message) {
     //message_id
@@ -48,16 +64,32 @@ fun handleMessage(msg: Message) {
     val contact = msg.contact()
 
     //todo check user in db
+    //fill user object here
+    //if chat id is login show welcome txt 
+    //else 
+    //todo show welcome txt and make auth 
+
     if (txt != null) {
         logPlz("new Msg from:" + user.id() + " username" + chat.username() + " txt:" + txt)
-        sendMsgKeyboard(chat.id().toString(), " سلام " + chat.firstName() + chat.lastName() + "، به ربات توزیع برق مشهد خوش آمدید. لطفا جهت احراز هویت شماره همراه خود را به ربات ارسال نمایید.")
+        if (txt.equals("ثبت دستی شماره")) {
+            sendMsg(chat.id().toString(), "لطفا شماره همراه خود را به صورت 11 رقمی مشابه 09123456789 وارد نمایید.")
+        } else {
+            sendMsgKeyboard(chat.id().toString(), " سلام " + chat.firstName() + chat.lastName() + "، به ربات توزیع برق مشهد خوش آمدید. لطفا جهت احراز هویت شماره همراه خود را به ربات ارسال نمایید.")
+        }
+
     }
 
     if (contact != null) {
+        closeKeyboard(chat.id().toString())
         logPlz("new Msg from:" + user.id() + " username" + chat.username() + " contact:" + contact.phoneNumber())
         val codeMsg = " یک کد فعالسازی به شماره همراه شما " + "(" + contact.phoneNumber() + ")" + " ارسال شد. لطفا کد را پس از دریافت به ربات ارسال کنید."
-        sendMsg(chat.id().toString(), codeMsg)
+        sendMsg(chat.id().toString(), codeMsg, true)
     }
+}
+
+fun closeKeyboard(chatId: String) {
+    val replyKeyboardRemove: Keyboard = ReplyKeyboardRemove(true)
+    bot.execute(SendMessage(chatId, "Keyboard").replyMarkup(replyKeyboardRemove))
 }
 
 fun logPlz(msg: Any) {
@@ -85,21 +117,27 @@ fun sendMsg(chatId: String, msg: String, isShowCount: Boolean = false) {
 
 fun sendCounter(chatId: String, msgId: Int, msg: String) {
     var allTime = 20
-    timer(initialDelay = 20000L, period = 1000L) {
+    timer(initialDelay = 0L, period = 1000L) {
         allTime -= 1
         val editMessageText = EditMessageText(chatId, msgId, msg + " (" + allTime + " ثانیه)")
             .parseMode(ParseMode.HTML)
+        bot.execute(editMessageText)
+        if (allTime == 0) {
+            sendMsgKeyboard(chatId, "زمان به پایان رسید. لطفا مجددا شماره همراه خود را ارسال نمایید تا کد فعالسازی برای شما ارسال شود", msgId)
+            this.cancel()
+        }
         //.disableWebPagePreview(true)
     }
 }
 
-fun sendMsgKeyboard(chatId: String, msg: String) {
+fun sendMsgKeyboard(chatId: String, msg: String, msgId: Int = 0) {
     val keyboard: Keyboard = ReplyKeyboardMarkup(
-        //KeyboardButton("text"),
-        KeyboardButton("ارسال شماره موبایل جهت احراز هویت").requestContact(true),
+        KeyboardButton("ثبت دستی شماره"),
+        KeyboardButton("ارسال شماره همراه").requestContact(true),
         //KeyboardButton("location").requestLocation(true)
     )
-    val request = SendMessage(chatId, msg).replyMarkup(keyboard)
+
+    val request = SendMessage(chatId, msg).replyMarkup(keyboard).replyToMessageId(msgId)
     bot.execute(request, object : Callback<SendMessage, SendResponse> {
         override fun onResponse(request: SendMessage?, response: SendResponse?) {
             logPlz("OnDone")

@@ -17,8 +17,7 @@ dependencies {
     //implementation("com.github.elbekD:kt-telegram-bot:2.1.8")
     //implementation 'com.github.pengrad:java-telegram-bot-api:6.3.0'
     implementation group: 'com.github.pengrad', name: 'java-telegram-bot-api', version: '6.3.0'
-
-
+    implementation 'app.softwork:postgres-native-sqldelight-driver:0.0.5'
 }
 
 test {
